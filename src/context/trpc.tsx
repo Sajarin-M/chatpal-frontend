@@ -1,4 +1,5 @@
 import { lazy, useEffect, useState } from 'react';
+import { showNotification } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { httpBatchLink } from '@trpc/client';
@@ -21,6 +22,18 @@ export function TrpcProvider({ children }: FCWithChildren) {
         defaultOptions: {
           queries: {
             refetchOnWindowFocus: false,
+            onError: (error: any) => {
+              if ('message' in error && typeof error.message === 'string') {
+                showNotification({ color: 'red', message: error.message });
+              }
+            },
+          },
+          mutations: {
+            onError: (error: any) => {
+              if ('message' in error && typeof error.message === 'string') {
+                showNotification({ color: 'red', message: error.message });
+              }
+            },
           },
         },
       }),
