@@ -1,4 +1,4 @@
-import { lazy, useEffect, useState } from 'react';
+import { lazy, useEffect, useMemo, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -16,42 +16,42 @@ const ReactQueryDevtoolsProduction = lazy(() =>
   })),
 );
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      onError: (error: any) => {
+        if ('message' in error && typeof error.message === 'string') {
+          showNotification({ color: 'red', message: error.message });
+        }
+      },
+    },
+    mutations: {
+      onError: (error: any) => {
+        if ('message' in error && typeof error.message === 'string') {
+          showNotification({ color: 'red', message: error.message });
+        }
+      },
+    },
+  },
+});
+
 export function TrpcProvider({ children }: FCWithChildren) {
   const { token } = useAuth();
 
-  const [queryClient] = useState(
+  const trpcClient = useMemo(
     () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            refetchOnWindowFocus: false,
-            onError: (error: any) => {
-              if ('message' in error && typeof error.message === 'string') {
-                showNotification({ color: 'red', message: error.message });
-              }
-            },
-          },
-          mutations: {
-            onError: (error: any) => {
-              if ('message' in error && typeof error.message === 'string') {
-                showNotification({ color: 'red', message: error.message });
-              }
-            },
-          },
-        },
-      }),
-  );
-  const [trpcClient] = useState(() =>
-    trpc.createClient({
-      links: [
-        httpBatchLink({
-          url: 'http://localhost:3001/trpc',
-          headers: () => ({
-            authorization: token || '',
+      trpc.createClient({
+        links: [
+          httpBatchLink({
+            url: 'http://localhost:3001/trpc',
+            headers: () => ({
+              authorization: token || '',
+            }),
           }),
-        }),
-      ],
-    }),
+        ],
+      }),
+    [token],
   );
 
   const [showDevtools, setShowDevtools] = useState(false);
