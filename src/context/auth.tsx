@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useWindowEvent } from '@mantine/hooks';
 import jwtDecode from 'jwt-decode';
 
 const tokenKey = 'auth-token';
@@ -26,6 +27,16 @@ AuthContext.displayName = 'Auth Context';
 export default function AuthProvider({ children }: FCWithChildren) {
   const navigate = useNavigate();
   const [token, _setToken] = useState(getAuthTokenFromStorage());
+
+  useWindowEvent('storage', (event) => {
+    if (
+      (event.storageArea === localStorage || event.storageArea === sessionStorage) &&
+      event.key === tokenKey &&
+      event.newValue
+    ) {
+      setToken(event.newValue);
+    }
+  });
 
   const user = useMemo(() => {
     try {
