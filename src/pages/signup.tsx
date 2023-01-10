@@ -1,10 +1,15 @@
 import { useForm } from 'react-hook-form';
+import { Navigate } from 'react-router-dom';
 import { Stack } from '@mantine/core';
+import { useAuth } from '$context/auth';
 import { trpc } from '$context/trpc';
 import { SubmitButton, TextInput } from '$components/form';
 
 export default function Signup() {
-  const { mutate } = trpc.users.signup.useMutation();
+  const { login, user } = useAuth();
+  const { mutate } = trpc.users.signup.useMutation({
+    onSuccess: ({ token }) => login(token),
+  });
 
   const { control, handleSubmit } = useForm({
     defaultValues: {
@@ -13,6 +18,8 @@ export default function Signup() {
       password: '',
     },
   });
+
+  if (user) return <Navigate to='/' />;
 
   return (
     <form
