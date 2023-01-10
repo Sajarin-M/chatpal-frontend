@@ -1,6 +1,5 @@
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLocalStorage } from '@mantine/hooks';
 import jwtDecode from 'jwt-decode';
 
 const tokenKey = 'auth-token';
@@ -10,13 +9,15 @@ export function getAuthTokenFromStorage() {
 }
 
 type Context = {
-  user: TokenDecoded | null;
+  token: string | null;
   logout: VoidFunction;
+  user: TokenDecoded | null;
   login: (token: string, rememberMe?: boolean) => void;
 };
 
 const AuthContext = createContext<Context>({
   user: null,
+  token: null,
   logout: () => {},
   login: () => {},
 });
@@ -24,17 +25,7 @@ AuthContext.displayName = 'Auth Context';
 
 export default function AuthProvider({ children }: FCWithChildren) {
   const navigate = useNavigate();
-  const [localToken, setLocalToken] = useLocalStorage({
-    key: tokenKey,
-    defaultValue: localStorage.getItem(tokenKey),
-  });
-
-  const [sessionToken, setSessionToken] = useLocalStorage({
-    key: tokenKey,
-    defaultValue: sessionStorage.getItem(tokenKey),
-  });
-
-  const token = localToken || sessionToken;
+  const [token, _setToken] = useState(getAuthTokenFromStorage());
 
   const user = useMemo(() => {
     try {
@@ -48,13 +39,12 @@ export default function AuthProvider({ children }: FCWithChildren) {
 
   function setToken(token: string, mode: 'localStorage' | 'sessionStorage' | 'both' = 'both') {
     if (mode === 'both') {
-      setLocalToken(token);
-      setSessionToken(token);
-    } else if (mode === 'localStorage') {
-      setLocalToken(token);
+      localStorage.setItem(tokenKey, token);
+      sessionStorage.setItem(tokenKey, token);
     } else {
-      setSessionToken(token);
+      window[mode].setItem(tokenKey, token);
     }
+    _setToken(token);
   }
 
   const login: Context['login'] = (token, keepme = true) => {
@@ -67,7 +57,9 @@ export default function AuthProvider({ children }: FCWithChildren) {
     navigate('/');
   };
 
-  return <AuthContext.Provider value={{ user, login, logout }}>{children} </AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, token, login, logout }}>{children} </AuthContext.Provider>
+  );
 }
 
 export const useAuth = () => useContext(AuthContext);
