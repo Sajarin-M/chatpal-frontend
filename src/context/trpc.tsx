@@ -5,6 +5,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { httpBatchLink } from '@trpc/client';
 import { createTRPCReact } from '@trpc/react-query';
 import type { AppRouter as _AppRouter } from '../../../backend/src';
+import { useAuth } from './auth';
 
 export type AppRouter = _AppRouter;
 export const trpc = createTRPCReact<AppRouter>();
@@ -16,6 +17,8 @@ const ReactQueryDevtoolsProduction = lazy(() =>
 );
 
 export function TrpcProvider({ children }: FCWithChildren) {
+  const { token } = useAuth();
+
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -43,6 +46,9 @@ export function TrpcProvider({ children }: FCWithChildren) {
       links: [
         httpBatchLink({
           url: 'http://localhost:3001/trpc',
+          headers: () => ({
+            authorization: token || '',
+          }),
         }),
       ],
     }),
